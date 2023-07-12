@@ -62,32 +62,36 @@ func comServerBytes(conn net.Conn) {
 	}
 }
 
+type Request struct {
+	Number int `json:"number"`
+}
+
+type Response struct {
+	Fibonacci int `json:"fibonacci"`
+}
+
 func comServerJson(conn net.Conn) {
 	enc := json.NewEncoder(conn)
 	dec := json.NewDecoder(conn)
-	fromServer := ""
-	toServer := ""
+	request := Request{}
+	response := Response{}
 
 	for i := 0; i < NumberRequests; i++ {
+		// Prepare the request
+		request.Number = i
 
-		// envia mensagem para o servidor
-		toServer = "Message #" + strconv.Itoa(i)
-		err := enc.Encode(toServer)
+		// Sends the request to the server
+		err := enc.Encode(&request)
 		if err != nil {
-			fmt.Println("Erro no envio dos dados do servidor:", err.Error())
+			fmt.Println("Error sending data to the server:", err.Error())
 		}
 
-		// recebe resposta do servidor
-		err = dec.Decode(&fromServer)
+		// Receives response from the server
+		err = dec.Decode(&response)
 		if err != nil {
-			fmt.Println("Erro no recebimento dos dados do servidor:", err.Error())
+			fmt.Println("Error receiving data from the server:", err.Error())
 		}
-		//fmt.Println("Dado: ", fromServer)
-	}
 
-	// envia mensagem de fim de dados
-	err := enc.Encode(EndMessage)
-	if err != nil {
-		fmt.Println("Erro no envio dos dados do servidor:", err.Error())
+		fmt.Printf("Fibonacci of %d is %d\n", i, response.Fibonacci)
 	}
 }

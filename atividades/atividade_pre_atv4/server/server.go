@@ -66,30 +66,46 @@ func processRequestBytes(conn net.Conn) {
 	conn.Close()
 }
 
+type Request struct {
+	Number int `json:"number"`
+}
+
+type Response struct {
+	Fibonacci int `json:"fibonacci"`
+}
+
+// Fibonacci function
+func fibonacci(n int) int {
+	if n <= 1 {
+		return n
+	}
+	return fibonacci(n-1) + fibonacci(n-2)
+}
+
 func processRequestJson(conn net.Conn) {
-	var fromClient string
+	var request Request
+	var response Response
 	dec := json.NewDecoder(conn)
 	enc := json.NewEncoder(conn)
 
 	for {
-		// recebe dados
-		err := dec.Decode(&fromClient)
+		// Receives data
+		err := dec.Decode(&request)
 		if err != nil {
-			fmt.Println("Erro na leitura dos dados do cliente:", err.Error())
-		}
-		fmt.Println("Dado recebido: ", fromClient)
-
-		// envia resposta
-		err = enc.Encode(fromClient)
-		if err != nil {
-			fmt.Println("Erro no envio dos dados para o cliente:", err.Error())
+			fmt.Println("Error reading data from the client:", err.Error())
+			break
 		}
 
-		if fromClient == EndMessage {
+		// Process the request (calculates Fibonacci)
+		response.Fibonacci = fibonacci(request.Number)
+
+		// Sends the response
+		err = enc.Encode(&response)
+		if err != nil {
+			fmt.Println("Error sending data to the client:", err.Error())
 			break
 		}
 	}
-
-	// fecha conexão
+	// Closes the connection
 	conn.Close()
 }
