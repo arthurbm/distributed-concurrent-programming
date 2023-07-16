@@ -2,9 +2,11 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"time"
 )
 
@@ -41,15 +43,70 @@ type Response struct {
 	Fibonacci int `json:"fibonacci"`
 }
 
+// Utility functions
+func openCSVFile(path string) (*csv.Writer, *os.File, error) {
+	// Open the file in append mode, create if doesn't exist
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Initialize csv writer
+	writer := csv.NewWriter(file)
+	return writer, file, nil
+}
+
+func writeToCSV(writer *csv.Writer, fibonacciIn, fibonacciOut int, timeTaken int64) error {
+	return writer.Write([]string{fmt.Sprintf("%d", fibonacciIn), fmt.Sprintf("%d", fibonacciOut), fmt.Sprintf("%d", timeTaken)})
+}
+
+func writeCSVHeader(writer *csv.Writer) error {
+	return writer.Write([]string{"Input", "Output", "timeTaken"})
+}
+
+func clearCSVContent(path string) error {
+	// Open the file in append mode, create if doesn't exist
+	file, err := os.OpenFile(path, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+
+	// Initialize csv writer
+	writer := csv.NewWriter(file)
+	return writer.Write([]string{})
+}
+
 func comServerJson(conn net.Conn) {
 	enc := json.NewEncoder(conn)
 	dec := json.NewDecoder(conn)
 	request := Request{}
 	response := Response{}
 
+	// Open CSV file
+	writer, file, err := openCSVFile("../data/results.csv")
+	if err != nil {
+		fmt.Println("Error opening the file:", err.Error())
+		return
+	}
+	defer file.Close()
+	defer writer.Flush()
+
+	// Clear CSV content
+	err = clearCSVContent("../data/results.csv")
+
+	// Write CSV header
+	err = writeCSVHeader(writer)
+	if err != nil {
+		fmt.Println("Error writing CSV header:", err.Error())
+		return
+	}
+
 	for i := 0; i < NumberRequests; i++ {
 		// Prepare the request
 		request.Number = i
+
+		// Time the request
+		t1 := time.Now()
 
 		// Sends the request to the server
 		err := enc.Encode(&request)
@@ -63,6 +120,13 @@ func comServerJson(conn net.Conn) {
 			fmt.Println("Error receiving data from the server:", err.Error())
 		}
 
-		fmt.Printf("Fibonacci of %d is %d\n", i, response.Fibonacci)
+		// Calculate the request time
+		timeTaken := time.Now().Sub(t1).Nanoseconds()
+
+		// Write the Fibonacci number and the request time to CSV
+		err = writeToCSV(writer, i, response.Fibonacci, timeTaken)
+		if err != nil {
+			fmt.Println("Error writing to CSV:", err.Error())
+		}
 	}
 }
