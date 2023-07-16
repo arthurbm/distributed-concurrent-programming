@@ -43,29 +43,6 @@ func main() {
 	}
 }
 
-func processRequestBytes(conn net.Conn) {
-	var fromClient = make([]byte, 1024)
-
-	for {
-		// recebe dados
-		mLen, err := conn.Read(fromClient)
-		if err != nil {
-			fmt.Println("Erro na leitura dos dados do cliente:", err.Error())
-		}
-		//fmt.Println("Dado recebido: ", string(fromClient[:mLen]))
-
-		// envia resposta
-		_, err = conn.Write([]byte(string(fromClient[:mLen])))
-
-		if string(fromClient[:mLen]) == EndMessage {
-			break
-		}
-	}
-
-	// fecha conexão
-	conn.Close()
-}
-
 type Request struct {
 	Number int `json:"number"`
 }
