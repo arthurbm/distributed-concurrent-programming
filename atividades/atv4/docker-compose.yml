@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  server:
+    build: ./server
+    ports:
+      - "1313:1313"
+    volumes:
+      - ./data/:/app/data/
+
+  client:
+    build: ./client
+    depends_on:
+      - server
+    volumes:
+      - ./data/:/app/data/

@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	ServerHost = "localhost"
+	ServerHost = "0.0.0.0" // docker
+	// ServerHost = "localhost" // local
 	ServerPort = "1313"
 	ServerType = "tcp"
 	EndMessage = "END"
@@ -28,7 +29,7 @@ func main() {
 	defer server.Close()
 
 	// aguarda conexões
-	fmt.Println("Aguardando conexões dos cliente em " + ServerHost + ":" + ServerPort)
+	fmt.Println("Aguardando conexões dos clientes em " + ServerHost + ":" + ServerPort)
 	for {
 		conn, err := server.Accept()
 		if err != nil {

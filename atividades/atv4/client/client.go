@@ -11,7 +11,10 @@ import (
 )
 
 const (
-	ServerHost     = "localhost"
+	// ServerHost = "localhost" // local
+	// DataFilePath   = "./data/" // local
+	ServerHost     = "server"     // docker
+	DataFilePath   = "/app/data/" // docker
 	ServerPort     = "1313"
 	ServerType     = "tcp"
 	NumberRequests = 40
@@ -21,6 +24,7 @@ const (
 func main() {
 	// estabelece conexão
 	conn, err := net.Dial(ServerType, ServerHost+":"+ServerPort)
+	fmt.Printf("Conectado ao servidor %s:%s\n", ServerHost, ServerPort)
 	if err != nil {
 		panic(err)
 	}
@@ -87,7 +91,7 @@ func comServerJson(conn net.Conn) {
 	uniqueID := time.Now().UnixNano()
 
 	// Open CSV file
-	writer, file, err := openCSVFile("../data/", uniqueID)
+	writer, file, err := openCSVFile(DataFilePath, uniqueID)
 
 	if err != nil {
 		fmt.Println("Error opening the file:", err.Error())
@@ -97,7 +101,7 @@ func comServerJson(conn net.Conn) {
 	defer writer.Flush()
 
 	// Clear CSV content
-	err = clearCSVContent("../data/")
+	err = clearCSVContent(DataFilePath)
 
 	// Write CSV header
 	err = writeCSVHeader(writer)
