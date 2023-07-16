@@ -130,7 +130,7 @@ func comServerJson(conn net.Conn) {
 		}
 
 		// Calculate the request time
-		timeTaken := time.Now().Sub(t1).Milliseconds()
+		timeTaken := time.Now().Sub(t1).Nanoseconds()
 
 		// Write the Fibonacci number and the request time to CSV
 		err = writeToCSV(writer, i, response.Fibonacci, timeTaken)
