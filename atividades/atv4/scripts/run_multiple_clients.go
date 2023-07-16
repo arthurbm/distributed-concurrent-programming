@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	NumClients = 80
+	NumClients = 5
 )
 
 func main() {

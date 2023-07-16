@@ -43,10 +43,12 @@ type Response struct {
 	Fibonacci int `json:"fibonacci"`
 }
 
-// Utility functions
-func openCSVFile(path string) (*csv.Writer, *os.File, error) {
+func openCSVFile(basePath string, uniqueID int64) (*csv.Writer, *os.File, error) {
+	timestamp := time.Now().Format("20060102150405")
+	filePath := fmt.Sprintf("%s_%d_%s.csv", basePath, uniqueID, timestamp)
+
 	// Open the file in append mode, create if doesn't exist
-	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -82,8 +84,11 @@ func comServerJson(conn net.Conn) {
 	request := Request{}
 	response := Response{}
 
+	uniqueID := time.Now().UnixNano()
+
 	// Open CSV file
-	writer, file, err := openCSVFile("../data/results.csv")
+	writer, file, err := openCSVFile("../data/", uniqueID)
+
 	if err != nil {
 		fmt.Println("Error opening the file:", err.Error())
 		return
@@ -92,7 +97,7 @@ func comServerJson(conn net.Conn) {
 	defer writer.Flush()
 
 	// Clear CSV content
-	err = clearCSVContent("../data/results.csv")
+	err = clearCSVContent("../data/")
 
 	// Write CSV header
 	err = writeCSVHeader(writer)
@@ -121,7 +126,7 @@ func comServerJson(conn net.Conn) {
 		}
 
 		// Calculate the request time
-		timeTaken := time.Now().Sub(t1).Nanoseconds()
+		timeTaken := time.Now().Sub(t1).Milliseconds()
 
 		// Write the Fibonacci number and the request time to CSV
 		err = writeToCSV(writer, i, response.Fibonacci, timeTaken)
