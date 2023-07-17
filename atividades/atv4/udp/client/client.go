@@ -1,4 +1,3 @@
-// socket-client project main.go
 package main
 
 import (
@@ -11,31 +10,32 @@ import (
 )
 
 const (
-	// ServerHost = "localhost" // local
-	// DataFilePath   = "./data/" // local
-	ServerHost     = "server"     // docker
-	DataFilePath   = "/app/data/" // docker
+	ServerAddr   = "localhost" // local
+	DataFilePath = "../data/"  // local
+	// ServerAddr     = "server"     // docker
+	// DataFilePath   = "/app/data/" // docker
 	ServerPort     = "1313"
-	ServerType     = "tcp"
+	ServerType     = "udp"
 	NumberRequests = 40
 	EndMessage     = "END"
 )
 
 func main() {
-	// estabelece conexão
-	conn, err := net.Dial(ServerType, ServerHost+":"+ServerPort)
-	fmt.Printf("Conectado ao servidor %s:%s\n", ServerHost, ServerPort)
+	// establish connection
+	serverAddr, _ := net.ResolveUDPAddr(ServerType, ServerAddr+":"+ServerPort)
+	fmt.Printf("Server address: %s\n", serverAddr)
+	conn, err := net.DialUDP(ServerType, nil, serverAddr)
+	fmt.Printf("Connected to server %s:%s\n", ServerAddr, ServerPort)
 	if err != nil {
 		panic(err)
 	}
 
-	// envia dado/recebe resposta
+	// send data/receive response
 	t1 := time.Now()
-	// comServerBytes(conn)
 	comServerJson(conn)
 	fmt.Println(time.Now().Sub(t1).Milliseconds())
 
-	// fecha conexão
+	// close connection
 	defer conn.Close()
 }
 
@@ -56,6 +56,7 @@ func openCSVFile(basePath string, uniqueID int64) (*csv.Writer, *os.File, error)
 	if err != nil {
 		return nil, nil, err
 	}
+	fmt.Println("File opened")
 
 	// Initialize csv writer
 	writer := csv.NewWriter(file)

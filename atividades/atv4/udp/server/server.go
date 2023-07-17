@@ -1,5 +1,3 @@
-// socket-server project main.go
-// developer.com/languages/intro-socket-programming-go/
 package main
 
 import (
@@ -10,37 +8,29 @@ import (
 )
 
 const (
-	ServerHost = "0.0.0.0" // docker
-	// ServerHost = "localhost" // local
+	// ServerAddr = "0.0.0.0" // docker
+	ServerAddr = "localhost" // local
 	ServerPort = "1313"
-	ServerType = "tcp"
+	ServerType = "udp"
 	EndMessage = "END"
 )
 
 func main() {
 
-	// cria listener
-	fmt.Println("Servidor em execução...")
-	server, err := net.Listen(ServerType, ServerHost+":"+ServerPort)
+	// creates UDP listener
+	fmt.Println("Server running...")
+	serverAddr, _ := net.ResolveUDPAddr(ServerType, ServerAddr+":"+ServerPort)
+	serverConn, err := net.ListenUDP(ServerType, serverAddr)
 	if err != nil {
-		fmt.Println("Erro na escuta por conexões:", err.Error())
+		fmt.Println("Error listening for connections:", err.Error())
 		os.Exit(1)
 	}
-	defer server.Close()
+	defer serverConn.Close()
 
-	// aguarda conexões
-	fmt.Println("Aguardando conexões dos clientes em " + ServerHost + ":" + ServerPort)
+	// waits for connections
+	fmt.Println("Waiting for client connections at " + ServerAddr + ":" + ServerPort)
 	for {
-		conn, err := server.Accept()
-		if err != nil {
-			fmt.Println("Erro ao aceitar conexão: ", err.Error())
-			os.Exit(1)
-		}
-		fmt.Println("Cliente conectado")
-
-		// cria thread para o cliente
-		// go processRequestBytes(conn)
-		go processRequestJson(conn)
+		processRequestJson(serverConn)
 	}
 }
 
@@ -60,30 +50,30 @@ func fibonacci(n int) int {
 	return fibonacci(n-1) + fibonacci(n-2)
 }
 
-func processRequestJson(conn net.Conn) {
-	var request Request
-	var response Response
-	dec := json.NewDecoder(conn)
-	enc := json.NewEncoder(conn)
+func processRequestJson(serverConn *net.UDPConn) {
+	buffer := make([]byte, 1024)
 
-	for {
-		// Receives data
-		err := dec.Decode(&request)
-		if err != nil {
-			fmt.Println("Error reading data from the client:", err.Error())
-			break
-		}
-
-		// Process the request (calculates Fibonacci)
-		response.Fibonacci = fibonacci(request.Number)
-
-		// Sends the response
-		err = enc.Encode(&response)
-		if err != nil {
-			fmt.Println("Error sending data to the client:", err.Error())
-			break
-		}
+	// Receives data
+	n, addr, err := serverConn.ReadFromUDP(buffer)
+	if err != nil {
+		fmt.Println("Error reading data from the client:", err.Error())
+		return
 	}
-	// Closes the connection
-	conn.Close()
+
+	var request Request
+	json.Unmarshal(buffer[:n], &request)
+
+	var response Response
+
+	// Process the request (calculates Fibonacci)
+	response.Fibonacci = fibonacci(request.Number)
+
+	// Sends the response
+	respData, err := json.Marshal(response)
+	if err != nil {
+		fmt.Println("Error encoding response:", err.Error())
+		return
+	}
+
+	serverConn.WriteToUDP(respData, addr)
 }

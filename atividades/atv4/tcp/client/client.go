@@ -12,7 +12,7 @@ import (
 
 const (
 	// ServerHost = "localhost" // local
-	// DataFilePath   = "./data/" // local
+	// DataFilePath = "../data/"  // local
 	ServerHost     = "server"     // docker
 	DataFilePath   = "/app/data/" // docker
 	ServerPort     = "1313"
