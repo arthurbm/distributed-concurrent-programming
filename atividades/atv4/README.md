@@ -16,9 +16,10 @@ You need to have the following installed on your machine:
 ## How to run
 
 1. Clone the repository to your local machine.
-2. Navigate to the atividades/atv4 directory of the project.
-3. Run `docker compose build` to build the Docker images for the client and the server.
-4. Run `docker compose up` to start the server and the clients.
+1. Navigate to the atividades/atv4 directory of the project.
+1. If you want to run the tcp version, navigate to the `tcp` directory. If you want to run the udp version, navigate to the `udp` directory.
+1. Run `docker compose build` to build the Docker images for the client and the server.
+1. Run `docker compose up` to start the server and the clients.
 
 The server will start and wait for connections. The clients will connect to the server, send numbers, receive the corresponding Fibonacci numbers, and write them along with the request time to unique CSV files in the `./data` directory.
 
