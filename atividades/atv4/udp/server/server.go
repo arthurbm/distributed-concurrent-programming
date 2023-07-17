@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	// ServerAddr = "0.0.0.0" // docker
-	ServerAddr = "localhost" // local
+	ServerAddr = "0.0.0.0" // docker
+	// ServerAddr = "localhost" // local
 	ServerPort = "1313"
 	ServerType = "udp"
 	EndMessage = "END"

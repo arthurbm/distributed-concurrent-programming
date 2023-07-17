@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	ServerAddr   = "localhost" // local
-	DataFilePath = "../data/"  // local
-	// ServerAddr     = "server"     // docker
-	// DataFilePath   = "/app/data/" // docker
+	// ServerAddr   = "localhost" // local
+	// DataFilePath = "../data/"  // local
+	ServerAddr     = "server"     // docker
+	DataFilePath   = "/app/data/" // docker
 	ServerPort     = "1313"
 	ServerType     = "udp"
 	NumberRequests = 40
@@ -56,7 +56,6 @@ func openCSVFile(basePath string, uniqueID int64) (*csv.Writer, *os.File, error)
 	if err != nil {
 		return nil, nil, err
 	}
-	fmt.Println("File opened")
 
 	// Initialize csv writer
 	writer := csv.NewWriter(file)
