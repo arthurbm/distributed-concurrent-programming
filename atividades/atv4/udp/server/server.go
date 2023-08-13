@@ -30,7 +30,14 @@ func main() {
 	// waits for connections
 	fmt.Println("Waiting for client connections at " + ServerAddr + ":" + ServerPort)
 	for {
-		processRequestJson(serverConn)
+		buffer := make([]byte, 1024)
+		n, addr, err := serverConn.ReadFromUDP(buffer)
+		if err != nil {
+			fmt.Println("Error reading data from the client:", err.Error())
+			continue
+		}
+
+		go processRequestJson(serverConn, buffer[:n], addr)
 	}
 }
 
@@ -50,18 +57,9 @@ func fibonacci(n int) int {
 	return fibonacci(n-1) + fibonacci(n-2)
 }
 
-func processRequestJson(serverConn *net.UDPConn) {
-	buffer := make([]byte, 1024)
-
-	// Receives data
-	n, addr, err := serverConn.ReadFromUDP(buffer)
-	if err != nil {
-		fmt.Println("Error reading data from the client:", err.Error())
-		return
-	}
-
+func processRequestJson(serverConn *net.UDPConn, data []byte, addr *net.UDPAddr) {
 	var request Request
-	json.Unmarshal(buffer[:n], &request)
+	json.Unmarshal(data, &request)
 
 	var response Response
 
