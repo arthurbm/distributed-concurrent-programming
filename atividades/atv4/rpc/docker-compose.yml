@@ -6,8 +6,6 @@ services:
       - "1313:1313"
     volumes:
       - ./data/:/app/data/
-    mem_limit: "107m"
-    cpus: "1"
 
   client:
     build: ./client
@@ -15,5 +13,3 @@ services:
       - server
     volumes:
       - ./data/:/app/data/
-    mem_limit: "107m"
-    cpus: "1"
