@@ -19,10 +19,14 @@ const (
 )
 
 func main() {
-	opts := createClientOptions("client", BrokerAddress)
-	client := connect("client", opts)
-
 	uniqueID := time.Now().UnixNano()
+
+	// convert uniqueId to string
+	uniqueIDStr := strconv.FormatInt(uniqueID, 10)
+
+	opts := createClientOptions(uniqueIDStr, BrokerAddress)
+	client := connect(uniqueIDStr, opts)
+
 	writer, file, err := openCSVFile(DataFilePath, uniqueID)
 	if err != nil {
 		fmt.Println("Error opening the file:", err.Error())

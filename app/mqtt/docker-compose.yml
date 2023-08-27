@@ -8,6 +8,7 @@ services:
     volumes:
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
+      - ./mosquitto_config:/mosquitto/config
 
   server:
     build: ./server
