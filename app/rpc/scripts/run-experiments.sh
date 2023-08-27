@@ -27,6 +27,9 @@ for clients in $client_numbers; do
   # Stop the client and server containers
   docker compose down
 
+  # Create the destination directory if it doesn't exist
+  mkdir -p ./samples/data${clients}/
+
   # Move the CSV files to the corresponding folder
   mv ./data/*.csv ./samples/data${clients}/
 
