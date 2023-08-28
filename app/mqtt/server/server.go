@@ -12,6 +12,7 @@ const (
 	BrokerAddress     = "tcp://mosquitto:1883"
 	RequestTopicBase  = "fibonacci/request/"
 	ResponseTopicBase = "fibonacci/response/"
+	QoS               = 1
 )
 
 // Fibonacci function
@@ -27,7 +28,7 @@ func main() {
 	client := connect("server", opts)
 
 	// Listen to all client requests
-	client.Subscribe(RequestTopicBase+"+", 0, func(client mqtt.Client, msg mqtt.Message) {
+	client.Subscribe(RequestTopicBase+"+", QoS, func(client mqtt.Client, msg mqtt.Message) {
 		numberStr := string(msg.Payload())
 		number, _ := strconv.Atoi(numberStr)
 
@@ -41,7 +42,7 @@ func main() {
 		respTopic := ResponseTopicBase + clientID + "/" + numberStr
 
 		// Publish the response
-		client.Publish(respTopic, 0, false, fmt.Sprintf("%d", result))
+		client.Publish(respTopic, QoS, false, fmt.Sprintf("%d", result))
 	})
 
 	fmt.Println("Server is running...")
