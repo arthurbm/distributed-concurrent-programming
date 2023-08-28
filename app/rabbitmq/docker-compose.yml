@@ -12,22 +12,22 @@ services:
     - rabbitmq_log:/rabbitmq/log
     - ./rabbitmq_config:/rabbitmq/config
     
-    server:
-      build: ./server
-      depends_on:
-        - rabbitmq
-      environment:
-        - MQTT_BROKER=rabbitmq
-    
-    client:
-      build: ./client
-      depends_on:
-        - server
-        - rabbitmq
-      environment:
-        - MQTT_BROKER=rabbitmq
-      volumes:
-        - ./data/:/app/data/
+  server:
+    build: ./server
+    depends_on:
+      - rabbitmq
+    environment:
+      - MQTT_BROKER=rabbitmq
+  
+  client:
+    build: ./client
+    depends_on:
+      - server
+      - rabbitmq
+    environment:
+      - MQTT_BROKER=rabbitmq
+    volumes:
+      - ./data/:/app/data/
 
 volumes:
   rabbitmq_data:
