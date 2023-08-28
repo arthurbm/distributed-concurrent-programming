@@ -17,7 +17,7 @@ services:
     depends_on:
       - rabbitmq
     environment:
-      - MQTT_BROKER=rabbitmq
+      - RBMQ_BROKER=rabbitmq
   
   client:
     build: ./client
@@ -25,7 +25,7 @@ services:
       - server
       - rabbitmq
     environment:
-      - MQTT_BROKER=rabbitmq
+      - RBMQ_BROKER=rabbitmq
     volumes:
       - ./data/:/app/data/
 
