@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -13,19 +14,17 @@ import (
 const (
 	DataFilePath      = "/app/data/"
 	BrokerAddress     = "tcp://mosquitto:1883"
-	RequestTopic      = "fibonacci/request"
+	RequestTopicBase  = "fibonacci/request/"
 	ResponseTopicBase = "fibonacci/response/"
 	NumberRequests    = 40
 )
 
 func main() {
-	uniqueID := time.Now().UnixNano()
+	uniqueID := strconv.FormatInt(time.Now().UnixNano(), 10)
 
-	// convert uniqueId to string
-	uniqueIDStr := strconv.FormatInt(uniqueID, 10)
-
-	opts := createClientOptions(uniqueIDStr, BrokerAddress)
-	client := connect(uniqueIDStr, opts)
+	// Modify the client options to use the unique ID
+	opts := createClientOptions("client-"+uniqueID, BrokerAddress)
+	client := connect("client-"+uniqueID, opts)
 
 	writer, file, err := openCSVFile(DataFilePath, uniqueID)
 	if err != nil {
@@ -41,19 +40,21 @@ func main() {
 		return
 	}
 
-	token := client.Subscribe(ResponseTopicBase+"#", 0, func(client mqtt.Client, msg mqtt.Message) {
-		number, _ := strconv.Atoi(string(msg.Payload()))
-		err := writeToCSV(writer, int(number), 2, int64(time.Now().Nanosecond()))
+	responseTopic := ResponseTopicBase + uniqueID + "/#"
+	client.Subscribe(responseTopic, 0, func(client mqtt.Client, msg mqtt.Message) {
+		numberStr := strings.Split(msg.Topic(), "/")[3]
+		number, _ := strconv.Atoi(numberStr)
+		response, _ := strconv.Atoi(string(msg.Payload()))
+		err := writeToCSV(writer, number, response, int64(time.Now().Nanosecond()))
 		if err != nil {
 			fmt.Println("Error writing to CSV:", err.Error())
 		}
 	})
-	token.Wait()
 
 	for i := 0; i < NumberRequests; i++ {
 		text := fmt.Sprintf("%d", i)
-		token := client.Publish(RequestTopic, 0, false, text)
-		token.Wait()
+		requestTopic := RequestTopicBase + uniqueID
+		client.Publish(requestTopic, 0, false, text)
 	}
 
 	// Sleep for some time to allow all responses to arrive.
@@ -76,9 +77,9 @@ func connect(clientID string, opts *mqtt.ClientOptions) mqtt.Client {
 	return client
 }
 
-func openCSVFile(basePath string, uniqueID int64) (*csv.Writer, *os.File, error) {
+func openCSVFile(basePath string, uniqueID string) (*csv.Writer, *os.File, error) {
 	timestamp := time.Now().Format("20060102150405")
-	filePath := fmt.Sprintf("%s_%d_%s.csv", basePath, uniqueID, timestamp)
+	filePath := fmt.Sprintf("%s_%s_%s.csv", basePath, uniqueID, timestamp)
 
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -94,5 +95,5 @@ func writeToCSV(writer *csv.Writer, fibonacciIn, fibonacciOut int, timeTaken int
 }
 
 func writeCSVHeader(writer *csv.Writer) error {
-	return writer.Write([]string{"Input", "Output", "TimeTaken"})
+	return writer.Write([]string{"Input", "Output", "timeTaken"})
 }

@@ -3,13 +3,14 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
 const (
 	BrokerAddress     = "tcp://mosquitto:1883"
-	RequestTopic      = "fibonacci/request"
+	RequestTopicBase  = "fibonacci/request/"
 	ResponseTopicBase = "fibonacci/response/"
 )
 
@@ -25,11 +26,21 @@ func main() {
 	opts := createClientOptions("server", BrokerAddress)
 	client := connect("server", opts)
 
-	client.Subscribe(RequestTopic, 0, func(client mqtt.Client, msg mqtt.Message) {
-		number, _ := strconv.Atoi(string(msg.Payload()))
+	// Listen to all client requests
+	client.Subscribe(RequestTopicBase+"+", 0, func(client mqtt.Client, msg mqtt.Message) {
+		numberStr := string(msg.Payload())
+		number, _ := strconv.Atoi(numberStr)
+
+		// Calculate the Fibonacci number
 		result := fibonacci(number)
 
-		respTopic := ResponseTopicBase + string(msg.Payload())
+		// Extract client ID from the topic
+		clientID := strings.Split(msg.Topic(), "/")[2]
+
+		// Construct the response topic based on the client ID and the number requested
+		respTopic := ResponseTopicBase + clientID + "/" + numberStr
+
+		// Publish the response
 		client.Publish(respTopic, 0, false, fmt.Sprintf("%d", result))
 	})
 
