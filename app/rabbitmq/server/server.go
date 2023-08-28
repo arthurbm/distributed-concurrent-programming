@@ -11,7 +11,7 @@ import (
 
 const (
 	NumberRequests = 40
-	BrokerAddress  = "amqp://guest:guest@localhost:5672/"
+	BrokerAddress  = "amqp://guest:guest@rabbitmq:5672/"
 )
 
 func failOnError(err error, msg string) {
