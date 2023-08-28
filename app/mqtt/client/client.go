@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -40,6 +41,9 @@ func main() {
 		return
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(NumberRequests) // Set the counter
+
 	responseTopic := ResponseTopicBase + uniqueID + "/#"
 	client.Subscribe(responseTopic, 0, func(client mqtt.Client, msg mqtt.Message) {
 		numberStr := strings.Split(msg.Topic(), "/")[3]
@@ -49,6 +53,7 @@ func main() {
 		if err != nil {
 			fmt.Println("Error writing to CSV:", err.Error())
 		}
+		wg.Done() // Decrement the counter
 	})
 
 	for i := 0; i < NumberRequests; i++ {
@@ -57,8 +62,11 @@ func main() {
 		client.Publish(requestTopic, 0, false, text)
 	}
 
-	// Sleep for some time to allow all responses to arrive.
-	time.Sleep(10 * time.Second)
+	// Instead of sleeping, wait until all responses have been processed
+	wg.Wait()
+
+	// disconnect from the broker
+	defer client.Disconnect(250)
 }
 
 func createClientOptions(clientID, uri string) *mqtt.ClientOptions {
