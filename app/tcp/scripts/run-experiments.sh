@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the sequence of client numbers
-client_numbers="1 5 10 20 40"
+client_numbers="1 5 10 20 40 80"
 
 # Change directory to where the docker compose.yml file is located
 cd "$(dirname "$0")/.."
