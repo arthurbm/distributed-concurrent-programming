@@ -51,7 +51,9 @@ func main() {
 		numberStr := strings.Split(msg.Topic(), "/")[3]
 		number, _ := strconv.Atoi(numberStr)
 		response, _ := strconv.Atoi(string(msg.Payload()))
-		err := writeToCSV(writer, number, response)
+		// err := writeToCSV(writer, number, response)
+		fmt.Println("Number:", number)
+		fmt.Println("Response:", response)
 		if err != nil {
 			fmt.Println("Error writing to CSV:", err.Error())
 		}
@@ -75,6 +77,10 @@ func main() {
 
 	// disconnect from the broker
 	defer client.Disconnect(250)
+}
+
+func clientRoutine(wg *sync.WaitGroup) {
+	defer wg.Done()
 }
 
 func createClientOptions(clientID, uri string) *mqtt.ClientOptions {
