@@ -22,7 +22,6 @@ const (
 )
 
 func main() {
-	startTime := time.Now() // record the start time
 	uniqueID := strconv.FormatInt(time.Now().UnixNano(), 10)
 
 	// Modify the client options to use the unique ID
@@ -48,29 +47,29 @@ func main() {
 
 	responseTopic := ResponseTopicBase + uniqueID + "/+"
 	client.Subscribe(responseTopic, QoS, func(client mqtt.Client, msg mqtt.Message) {
-		numberStr := strings.Split(msg.Topic(), "/")[3]
-		number, _ := strconv.Atoi(numberStr)
-		response, _ := strconv.Atoi(string(msg.Payload()))
-		// err := writeToCSV(writer, number, response)
-		fmt.Println("Number:", number)
-		fmt.Println("Response:", response)
+		splitData := strings.Split(string(msg.Payload()), ":")
+		number, _ := strconv.Atoi(splitData[0])
+		sentTime, _ := strconv.ParseInt(splitData[1], 10, 64)
+		responseTime := time.Now().UnixNano()
+		timeTaken := responseTime - sentTime
+
+		err := writeToCSV(writer, number, 0, timeTaken)
 		if err != nil {
 			fmt.Println("Error writing to CSV:", err.Error())
 		}
-		wg.Done() // Decrement the counter
+		wg.Done()
 	})
 
 	for i := 0; i < NumberRequests; i++ {
-		text := fmt.Sprintf("%d", i)
+		currentTime := time.Now().UnixNano() // get current time in nanoseconds
+		payload := fmt.Sprintf("%d:%d", i, currentTime)
 		requestTopic := RequestTopicBase + uniqueID
-		client.Publish(requestTopic, QoS, false, text)
+		client.Publish(requestTopic, QoS, false, payload)
 	}
 
 	// Instead of sleeping, wait until all responses have been processed
 	wg.Wait()
 
-	var totalTime = time.Now().Sub(startTime).Nanoseconds()
-	err = addTotalTimeCSV(writer, totalTime)
 	if err != nil {
 		fmt.Println("Error writing to CSV:", err.Error())
 	}
@@ -116,8 +115,8 @@ func addTotalTimeCSV(writer *csv.Writer, totalTime int64) error {
 	return writer.Write([]string{"0", "0", fmt.Sprintf("%d", totalTime)})
 }
 
-func writeToCSV(writer *csv.Writer, fibonacciIn, fibonacciOut int) error {
-	return writer.Write([]string{fmt.Sprintf("%d", fibonacciIn), fmt.Sprintf("%d", fibonacciOut)})
+func writeToCSV(writer *csv.Writer, fibonacciIn, fibonacciOut int, timeTaken int64) error {
+	return writer.Write([]string{fmt.Sprintf("%d", fibonacciIn), fmt.Sprintf("%d", fibonacciOut), fmt.Sprintf("%d", timeTaken)})
 }
 
 func writeCSVHeader(writer *csv.Writer) error {

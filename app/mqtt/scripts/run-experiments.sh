@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the sequence of client numbers
-client_numbers="1 5 10 20 40 80"
+client_numbers="40 80"
 
 # Change directory to where the docker compose.yml file is located
 cd "$(dirname "$0")/.."
@@ -13,6 +13,10 @@ for clients in $client_numbers; do
   # Stop any running containers
   docker compose down
 
+  docker compose up -d mosquitto
+
+  sleep 15
+
   # Start the server
   docker compose up -d server
 
@@ -22,7 +26,7 @@ for clients in $client_numbers; do
   # Start the clients
   docker compose up client -d --scale client=$clients
 
-  sleep 40
+  sleep 70
   
   # Stop the client and server containers
   docker compose down
