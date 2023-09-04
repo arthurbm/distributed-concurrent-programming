@@ -14,15 +14,14 @@ import (
 )
 
 const (
-	// ServerHost = "localhost" // local
-	// DataFilePath = "../data/"  // local
 	DataFilePath   = "/app/data/" // docker
 	NumberRequests = 40
-	BrokerAddress  = "amqp://guest:guest@rabbitmq:5672/"
 )
 
-func randInt(min int, max int) int {
-	return min + rand.Intn(max-min)
+func failOnError(err error, msg string) {
+	if err != nil {
+		log.Panicf("%s: %s", msg, err)
+	}
 }
 
 func randomString(l int) string {
@@ -33,31 +32,25 @@ func randomString(l int) string {
 	return string(bytes)
 }
 
-func failOnError(err error, msg string) {
-	if err != nil {
-		log.Panicf("%s: %s", msg, err.Error())
-	}
+func randInt(min int, max int) int {
+	return min + rand.Intn(max-min)
 }
 
 func fibonacciRPC(n int) (res int, err error) {
-	// estabelece conexão
-	amqpServerURL := BrokerAddress
-	conn, err := amqp.Dial(amqpServerURL)
-	fmt.Printf("Connected to server %s\n", amqpServerURL)
+	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 
-	// abrindo um cahnnel para a instância de rabbitmq que estabelecemos
 	ch, err := conn.Channel()
 	failOnError(err, "Failed to open a channel")
 	defer ch.Close()
 
 	q, err := ch.QueueDeclare(
-		"",    // queue name
+		"",    // name
 		false, // durable
 		false, // delete when unused
 		true,  // exclusive
-		false, // no wait
+		false, // noWait
 		nil,   // arguments
 	)
 	failOnError(err, "Failed to declare a queue")
@@ -72,6 +65,7 @@ func fibonacciRPC(n int) (res int, err error) {
 		nil,    // args
 	)
 	failOnError(err, "Failed to register a consumer")
+
 	corrId := randomString(32)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -94,29 +88,51 @@ func fibonacciRPC(n int) (res int, err error) {
 		if corrId == d.CorrelationId {
 			res, err = strconv.Atoi(string(d.Body))
 			failOnError(err, "Failed to convert body to integer")
+			break
 		}
 	}
+
 	return
 }
 
 func main() {
+	rand.Seed(time.Now().UTC().UnixNano())
+
 	uniqueID := time.Now().UnixNano()
-	// file configs
+
 	writer, file, err := openCSVFile(DataFilePath, uniqueID)
-	failOnError(err, "Error opening the file")
+	if err != nil {
+		log.Fatal("Error opening the file:", err.Error())
+		return
+	}
 	defer file.Close()
 	defer writer.Flush()
 
 	err = writeCSVHeader(writer)
-	failOnError(err, "Error writing CSV header")
+	if err != nil {
+		log.Fatal("Error writing CSV header:", err.Error())
+		return
+	}
 
 	for i := 0; i < NumberRequests; i++ {
-		log.Printf(" [x] Requesting fib(%d)\n", i)
-		start := time.Now()
-		res, _ := fibonacciRPC(i)
-		err = writeToCSV(writer, i, 2, int64(time.Since(start)))
-		failOnError(err, "Failed to write to csv file")
-		log.Printf(" [.] Got %d\n", res)
+		n := i
+
+		log.Printf(" [x] Requesting fib(%d)", n)
+		t1 := time.Now()
+		res, err := fibonacciRPC(n)
+		timeTaken := time.Now().Sub(t1).Nanoseconds()
+
+		if err != nil {
+			log.Println("Failed to handle RPC request:", err)
+			continue
+		}
+
+		log.Printf(" [.] Got %d", res)
+
+		err = writeToCSV(writer, n, res, int64(timeTaken))
+		if err != nil {
+			log.Println("Error writing to CSV:", err)
+		}
 	}
 }
 
@@ -138,5 +154,5 @@ func writeToCSV(writer *csv.Writer, fibonacciIn, fibonacciOut int, timeTaken int
 }
 
 func writeCSVHeader(writer *csv.Writer) error {
-	return writer.Write([]string{"Input", "Output", "TimeTaken"})
+	return writer.Write([]string{"Input", "Output", "timeTaken"})
 }

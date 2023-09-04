@@ -16,7 +16,7 @@ const (
 
 func failOnError(err error, msg string) {
 	if err != nil {
-		log.Panicf("%s: %s", msg, err.Error())
+		log.Panicf("%s: %s", msg, err)
 	}
 }
 
@@ -29,9 +29,7 @@ func fibonacci(n int) int {
 }
 
 func main() {
-	// estabelece conexão
-	amqpServerURL := BrokerAddress
-	conn, err := amqp.Dial(amqpServerURL)
+	conn, err := amqp.Dial(BrokerAddress)
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 
@@ -40,12 +38,12 @@ func main() {
 	defer ch.Close()
 
 	q, err := ch.QueueDeclare(
-		"",    // name
-		false, // durable
-		false, // delete when unused
-		false, // exclusive
-		false, // no-wait
-		nil,   // arguments
+		"rpc_queue", // name
+		false,       // durable
+		false,       // delete when unused
+		false,       // exclusive
+		false,       // no-wait
+		nil,         // arguments
 	)
 	failOnError(err, "Failed to declare a queue")
 
@@ -76,6 +74,7 @@ func main() {
 			n, err := strconv.Atoi(string(d.Body))
 			failOnError(err, "Failed to convert body to integer")
 
+			log.Printf(" [.] fib(%d)", n)
 			response := fibonacci(n)
 
 			err = ch.PublishWithContext(ctx,
