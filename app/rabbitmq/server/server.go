@@ -74,7 +74,6 @@ func main() {
 			n, err := strconv.Atoi(string(d.Body))
 			failOnError(err, "Failed to convert body to integer")
 
-			log.Printf(" [.] fib(%d)", n)
 			response := fibonacci(n)
 
 			err = ch.PublishWithContext(ctx,

@@ -72,8 +72,6 @@ func fibonacciRPC(ch *amqp.Channel, q amqp.Queue, msgs <-chan amqp.Delivery, n i
 }
 
 func main() {
-	rand.Seed(time.Now().UTC().UnixNano())
-
 	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
@@ -124,7 +122,6 @@ func main() {
 	for i := 0; i < NumberRequests; i++ {
 		n := i
 
-		log.Printf(" [x] Requesting fib(%d)", n)
 		t1 := time.Now()
 		res, err := fibonacciRPC(ch, q, msgs, n)
 		timeTaken := time.Now().Sub(t1).Nanoseconds()
@@ -133,8 +130,6 @@ func main() {
 			log.Println("Failed to handle RPC request:", err)
 			continue
 		}
-
-		log.Printf(" [.] Got %d", res)
 
 		err = writeToCSV(writer, n, res, int64(timeTaken))
 		if err != nil {
