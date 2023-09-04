@@ -36,7 +36,44 @@ func randInt(min int, max int) int {
 	return min + rand.Intn(max-min)
 }
 
-func fibonacciRPC(n int) (res int, err error) {
+func fibonacciRPC(ch *amqp.Channel, q amqp.Queue, msgs <-chan amqp.Delivery, n int) (res int, err error) {
+	corrId := randomString(32)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err = ch.PublishWithContext(ctx,
+		"",          // exchange
+		"rpc_queue", // routing key
+		false,       // mandatory
+		false,       // immediate
+		amqp.Publishing{
+			ContentType:   "text/plain",
+			CorrelationId: corrId,
+			ReplyTo:       q.Name,
+			Body:          []byte(strconv.Itoa(n)),
+		})
+	failOnError(err, "Failed to publish a message")
+
+	timeout := time.After(5 * time.Second) // Adjust the timeout as necessary
+
+	for {
+		select {
+		case d := <-msgs:
+			if corrId == d.CorrelationId {
+				res, err = strconv.Atoi(string(d.Body))
+				failOnError(err, "Failed to convert body to integer")
+				return res, nil // We've got our response; exit the function.
+			}
+		case <-timeout:
+			return 0, fmt.Errorf("Timeout waiting for response")
+		}
+	}
+}
+
+func main() {
+	rand.Seed(time.Now().UTC().UnixNano())
+
 	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
@@ -66,36 +103,6 @@ func fibonacciRPC(n int) (res int, err error) {
 	)
 	failOnError(err, "Failed to register a consumer")
 
-	corrId := randomString(32)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	err = ch.PublishWithContext(ctx,
-		"",          // exchange
-		"rpc_queue", // routing key
-		false,       // mandatory
-		false,       // immediate
-		amqp.Publishing{
-			ContentType:   "text/plain",
-			CorrelationId: corrId,
-			ReplyTo:       q.Name,
-			Body:          []byte(strconv.Itoa(n)),
-		})
-	failOnError(err, "Failed to publish a message")
-
-	for d := range msgs {
-		if corrId == d.CorrelationId {
-			res, err = strconv.Atoi(string(d.Body))
-			failOnError(err, "Failed to convert body to integer")
-			break
-		}
-	}
-
-	return
-}
-
-func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	uniqueID := time.Now().UnixNano()
@@ -119,7 +126,7 @@ func main() {
 
 		log.Printf(" [x] Requesting fib(%d)", n)
 		t1 := time.Now()
-		res, err := fibonacciRPC(n)
+		res, err := fibonacciRPC(ch, q, msgs, n)
 		timeTaken := time.Now().Sub(t1).Nanoseconds()
 
 		if err != nil {
