@@ -55,7 +55,7 @@ func fibonacciRPC(ch *amqp.Channel, q amqp.Queue, msgs <-chan amqp.Delivery, n i
 		})
 	failOnError(err, "Failed to publish a message")
 
-	timeout := time.After(5 * time.Second) // Adjust the timeout as necessary
+	timeout := time.After(40 * time.Second) // Adjust the timeout as necessary
 
 	for {
 		select {
